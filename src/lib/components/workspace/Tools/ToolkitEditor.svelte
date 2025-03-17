@@ -29,7 +29,7 @@
 	export let meta = {
 		description: '',
 		button_text: '',
-		show_button: true
+		show_button: false
 	};
 	export let content = '';
 	export let accessControl = null;
@@ -253,7 +253,7 @@ class Tools:
 								{id}
 							</div>
 						{:else}
-							<Tooltip className="w-full" content={$i18n.t('e.g. my_tools')} placement="top-start">
+							<Tooltip className="w-48" content={$i18n.t('e.g. my_tools')} placement="top-start">
 								<input
 									class="w-full text-sm disabled:text-gray-500 bg-transparent outline-hidden"
 									type="text"
@@ -267,7 +267,7 @@ class Tools:
 
 						<div class="flex-1 flex gap-2">
 							<Tooltip
-								className="w-full self-center items-center flex"
+								className="flex-1 self-center items-center flex"
 								content={$i18n.t('e.g. Tools for performing various operations')}
 								placement="top-start"
 							>
@@ -300,7 +300,7 @@ class Tools:
 								placement="top"
 							>
 								<Switch
-									state={meta.show_button ?? true}
+									state={meta.show_button ?? false}
 									on:change={(e) => {
 										meta.show_button = e.detail;
 									}}

@@ -54,8 +54,8 @@ class Tool(Base):
 class ToolMeta(BaseModel):
     description: Optional[str] = None
     manifest: Optional[dict] = {}
-    show_button: Optional[bool] = True  # Default to True to maintain backward compatibility
-    button_text: Optional[str] = None  # Custom text to display on the tool button
+    show_button: Optional[bool] = False
+    button_text: Optional[str] = None
 
 
 class ToolModel(BaseModel):
