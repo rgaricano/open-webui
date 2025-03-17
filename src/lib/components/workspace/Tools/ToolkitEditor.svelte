@@ -11,6 +11,7 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import LockClosed from '$lib/components/icons/LockClosed.svelte';
 	import AccessControlModal from '../common/AccessControlModal.svelte';
+	import Switch from '$lib/components/common/Switch.svelte';
 
 	let formElement = null;
 	let loading = false;
@@ -26,7 +27,9 @@
 	export let id = '';
 	export let name = '';
 	export let meta = {
-		description: ''
+		description: '',
+		button_text: '',
+		show_button: true
 	};
 	export let content = '';
 	export let accessControl = null;
@@ -262,19 +265,49 @@ class Tools:
 							</Tooltip>
 						{/if}
 
-						<Tooltip
-							className="w-full self-center items-center flex"
-							content={$i18n.t('e.g. Tools for performing various operations')}
-							placement="top-start"
-						>
-							<input
-								class="w-full text-sm bg-transparent outline-hidden"
-								type="text"
-								placeholder={$i18n.t('Tool Description')}
-								bind:value={meta.description}
-								required
-							/>
-						</Tooltip>
+						<div class="flex-1 flex gap-2">
+							<Tooltip
+								className="w-full self-center items-center flex"
+								content={$i18n.t('e.g. Tools for performing various operations')}
+								placement="top-start"
+							>
+								<input
+									class="w-full text-sm bg-transparent outline-hidden"
+									type="text"
+									placeholder={$i18n.t('Tool Description')}
+									bind:value={meta.description}
+									required
+								/>
+							</Tooltip>
+
+							<Tooltip
+								className="w-48 self-center items-center flex"
+								content={$i18n.t('Custom text to display on the tool button in chat')}
+								placement="top-start"
+							>
+								<input
+									class="w-full text-sm bg-transparent outline-hidden"
+									type="text"
+									placeholder={$i18n.t('Button Text (optional)')}
+									bind:value={meta.button_text}
+								/>
+							</Tooltip>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<Tooltip
+								content={$i18n.t('Show button in chat interface')}
+								placement="top"
+							>
+								<Switch
+									state={meta.show_button ?? true}
+									on:change={(e) => {
+										meta.show_button = e.detail;
+									}}
+								/>
+							</Tooltip>
+							<span class="text-xs text-gray-500">{$i18n.t('Show Button')}</span>
+						</div>
 					</div>
 				</div>
 
