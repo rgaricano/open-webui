@@ -975,6 +975,15 @@
 															document.getElementById('send-message-button')?.click();
 														}
 													}
+
+													if (commandsContainerElement && e.key === 'Tab') {
+														e.preventDefault();
+
+														const commandOptionButton = [
+															...document.getElementsByClassName('selected-command-option-button')
+														]?.at(-1);
+														commandOptionButton?.click();
+													}													
 												} else {
 													if (
 														!$mobile ||
