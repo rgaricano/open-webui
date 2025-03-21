@@ -1,9 +1,9 @@
 import logging
 import os
-import uuid
+import heapq
 from typing import Optional, Union
+from concurrent.futures import ThreadPoolExecutor
 
-import asyncio
 import requests
 import hashlib
 
@@ -15,7 +15,6 @@ from langchain_core.documents import Document
 
 from open_webui.config import VECTOR_DB
 from open_webui.retrieval.vector.connector import VECTOR_DB_CLIENT
-from open_webui.utils.misc import get_last_user_message, calculate_sha256_string
 
 from open_webui.models.users import UserModel
 from open_webui.models.files import Files
@@ -102,6 +101,7 @@ def get_doc(collection_name: str, user: UserModel = None):
 
 def query_doc_with_hybrid_search(
     collection_name: str,
+    collection_data,
     query: str,
     embedding_function,
     k: int,
@@ -109,11 +109,9 @@ def query_doc_with_hybrid_search(
     r: float,
 ) -> dict:
     try:
-        result = VECTOR_DB_CLIENT.get(collection_name=collection_name)
-
         bm25_retriever = BM25Retriever.from_texts(
-            texts=result.documents[0],
-            metadatas=result.metadatas[0],
+            texts=collection_data.documents[0],
+            metadatas=collection_data.metadatas[0],
         )
         bm25_retriever.k = k
 
@@ -136,19 +134,18 @@ def query_doc_with_hybrid_search(
         compression_retriever = ContextualCompressionRetriever(
             base_compressor=compressor, base_retriever=ensemble_retriever
         )
-
-        result = compression_retriever.invoke(query)
-        result = {
-            "distances": [[d.metadata.get("score") for d in result]],
-            "documents": [[d.page_content for d in result]],
-            "metadatas": [[d.metadata for d in result]],
+        collection_data = compression_retriever.invoke(query)
+        collection_data = {
+            "distances": [[d.metadata.get("score") for d in collection_data]],
+            "documents": [[d.page_content for d in collection_data]],
+            "metadatas": [[d.metadata for d in collection_data]],
         }
 
-        log.info(
+        log.debug(
             "query_doc_with_hybrid_search:result "
-            + f'{result["metadatas"]} {result["distances"]}'
+            + f'{collection_data["metadatas"]} {collection_data["distances"]}'
         )
-        return result
+        return collection_data
     except Exception as e:
         raise e
 
@@ -175,12 +172,18 @@ def merge_get_results(get_results: list[dict]) -> dict:
 
 
 def merge_and_sort_query_results(
-    query_results: list[dict], k: int, reverse: bool = False
+    query_results: list[dict], k: int
 ) -> dict:
-    # Initialize lists to store combined data
-    combined = []
-    seen_hashes = set()  # To store unique document hashes
-
+    
+    if VECTOR_DB == "chroma":
+        # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
+        # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
+        reverse = False
+    else:
+        reverse = True
+        
+    combined = dict()  # To store documents with unique document hashes as keys
+    
     for data in query_results:
         distances = data["distances"][0]
         documents = data["documents"][0]
@@ -190,20 +193,36 @@ def merge_and_sort_query_results(
             if isinstance(document, str):
                 doc_hash = hashlib.md5(
                     document.encode()
-                ).hexdigest()  # Compute a hash for uniqueness
+                ).hexdigest()  # Compute a hash for uniqueness of the document fragment
 
-                if doc_hash not in seen_hashes:
-                    seen_hashes.add(doc_hash)
-                    combined.append((distance, document, metadata))
+                if doc_hash not in combined.keys():
+                    combined[doc_hash] = (distance, document, metadata)
+                    continue  # if doc is new, no further comparison is needed
 
-    # Sort the list based on distances
-    combined.sort(key=lambda x: x[0], reverse=reverse)
+                # if doc is alredy in, but new distance is better, update
+                if not reverse and distance < combined[doc_hash][0]:
+                    # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
+                    # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
+                    combined[doc_hash] = (distance, document, metadata)
+                if reverse and distance > combined[doc_hash][0]:
+                    combined[doc_hash] = (distance, document, metadata)
+    
+    combined = list(combined.values())
+    if reverse:
+        top_k = heapq.nlargest(k, combined, key=lambda x: x[0])
+    else:
+        top_k = heapq.nsmallest(k, combined, key=lambda x: x[0])
 
-    # Slice to keep only the top k elements
-    sorted_distances, sorted_documents, sorted_metadatas = (
-        zip(*combined[:k]) if combined else ([], [], [])
-    )
+    # Unpack results
+    sorted_distances, sorted_documents, sorted_metadatas = zip(*top_k) if top_k else ([], [], [])
 
+    # Transform distances
+    if not reverse:
+        # Combine operations into single comprehension
+        sorted_distances = tuple(-dist + 1 for dist in sorted_distances)
+    else:
+        sorted_distances = tuple(dist + 1 for dist in sorted_distances)
+    
     # Create and return the output dictionary
     return {
         "distances": [list(sorted_distances)],
@@ -252,13 +271,8 @@ def query_collection(
                     log.exception(f"Error when querying the collection: {e}")
             else:
                 pass
-
-    if VECTOR_DB == "chroma":
-        # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
-        # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
-        return merge_and_sort_query_results(results, k=k, reverse=False)
-    else:
-        return merge_and_sort_query_results(results, k=k, reverse=True)
+            
+    return merge_and_sort_query_results(results, k=k)
 
 
 def query_collection_with_hybrid_search(
@@ -271,35 +285,59 @@ def query_collection_with_hybrid_search(
 ) -> dict:
     results = []
     error = False
-    for collection_name in collection_names:
+
+    # Fetch collection data once per collection
+    collection_data = {}
+    with ThreadPoolExecutor() as executor:
+        future_results = {
+            collection_name: executor.submit(VECTOR_DB_CLIENT.get, collection_name=collection_name)
+            for collection_name in collection_names
+        }
+
+        for collection_name, future in future_results.items():
+            try:
+                collection_data[collection_name] = future.result()
+            except Exception as e:
+                log.exception(f"Failed to fetch collection {collection_name}: {e}")
+                collection_data[collection_name] = None
+
+    log.info("Starting the processing of queries in parallel...")
+    def process_query(collection_name, query):
         try:
-            for query in queries:
-                result = query_doc_with_hybrid_search(
-                    collection_name=collection_name,
-                    query=query,
-                    embedding_function=embedding_function,
-                    k=k,
-                    reranking_function=reranking_function,
-                    r=r,
-                )
-                results.append(result)
-        except Exception as e:
-            log.exception(
-                "Error when querying the collection with " f"hybrid_search: {e}"
+            # Fetch pre-loaded collection data
+            if collection_data[collection_name] is None:
+                raise Exception(f"Collection data for {collection_name} is unavailable.")
+
+            result = query_doc_with_hybrid_search(
+                collection_name=collection_name,
+                collection_data=collection_data[collection_name],
+                query=query,
+                embedding_function=embedding_function,
+                k=k,
+                reranking_function=reranking_function,
+                r=r,
             )
+            return result, None
+        except Exception as e:
+            log.exception(f"Error when querying the collection with hybrid_search: {e}")
+            return None, e
+
+    tasks = [(collection_name, query) for collection_name in collection_names for query in queries]
+
+    with ThreadPoolExecutor() as executor:
+        future_results = [executor.submit(process_query, cn, q) for cn, q in tasks]
+        task_results = [future.result() for future in future_results]
+
+    for result, err in task_results:
+        if err is not None:
             error = True
+        elif result is not None:
+            results.append(result)
 
-    if error:
-        raise Exception(
-            "Hybrid search failed for all collections. Using Non hybrid search as fallback."
-        )
+    if error and not results:
+        raise Exception("Hybrid search failed for all collections. Using Non-hybrid search as fallback.")
 
-    if VECTOR_DB == "chroma":
-        # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
-        # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
-        return merge_and_sort_query_results(results, k=k, reverse=False)
-    else:
-        return merge_and_sort_query_results(results, k=k, reverse=True)
+    return merge_and_sort_query_results(results, k=k)
 
 
 def get_embedding_function(
