@@ -109,8 +109,11 @@ async def periodic_usage_pool_cleanup():
             if send_usage:
                 # Emit updated usage information after cleaning
                 await sio.emit("usage", {"models": get_models_in_use()})
+#                log.debug("antesasyncio")
+                release_func()
 
             await asyncio.sleep(TIMEOUT_DURATION)
+#            log.debug("_despuesasyncio_")
     finally:
         release_func()
 

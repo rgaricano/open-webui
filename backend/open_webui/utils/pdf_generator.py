@@ -4,10 +4,11 @@ from pathlib import Path
 from typing import Dict, Any, List
 from html import escape
 
-from markdown import markdown
+#from markdown import markdown
 
 import site
-from fpdf import FPDF
+from fpdf import FPDF, FontFace,TextStyle
+from mistletoe import markdown
 
 from open_webui.env import STATIC_DIR, FONTS_DIR
 from open_webui.models.chats import ChatTitleMessagesForm
@@ -41,9 +42,15 @@ class PDFGenerator:
             return ""
 
     def _build_html_message(self, message: Dict[str, Any]) -> str:
+ #       md = (
+ #           MarkdownIt('commonmark', {'breaks':True,'html':True,'linkify':True,'typographer':True})
+ #           .enable('table')
+ #       )
         """Build HTML for a single message."""
         role = escape(message.get("role", "user"))
         content = escape(message.get("content", ""))
+        content = markdown(content)
+#        content = md.render(content)
         timestamp = message.get("timestamp")
 
         model = escape(message.get("model") if role == "assistant" else "")
@@ -112,14 +119,13 @@ class PDFGenerator:
             if not FONTS_DIR.exists():
                 FONTS_DIR = Path(".") / "backend" / "static" / "fonts"
 
-            pdf.add_font("NotoSans", "", f"{FONTS_DIR}/NotoSans-Regular.ttf")
-            pdf.add_font("NotoSans", "b", f"{FONTS_DIR}/NotoSans-Bold.ttf")
-            pdf.add_font("NotoSans", "i", f"{FONTS_DIR}/NotoSans-Italic.ttf")
-            pdf.add_font("NotoSansKR", "", f"{FONTS_DIR}/NotoSansKR-Regular.ttf")
-            pdf.add_font("NotoSansJP", "", f"{FONTS_DIR}/NotoSansJP-Regular.ttf")
-            pdf.add_font("NotoSansSC", "", f"{FONTS_DIR}/NotoSansSC-Regular.ttf")
-            pdf.add_font("Twemoji", "", f"{FONTS_DIR}/Twemoji.ttf")
-
+            pdf.add_font("NotoSans", "", f"{FONTS_DIR}/NotoSans-Regular.ttf",uni=True)
+            pdf.add_font("NotoSans", "b", f"{FONTS_DIR}/NotoSans-Bold.ttf",uni=True)
+            pdf.add_font("NotoSans", "i", f"{FONTS_DIR}/NotoSans-Italic.ttf",uni=True)
+            pdf.add_font("NotoSansKR", "", f"{FONTS_DIR}/NotoSansKR-Regular.ttf",uni=True)
+            pdf.add_font("NotoSansJP", "", f"{FONTS_DIR}/NotoSansJP-Regular.ttf",uni=True)
+            pdf.add_font("NotoSansSC", "", f"{FONTS_DIR}/NotoSansSC-Regular.ttf",uni=True)
+            pdf.add_font("Twemoji", "", f"{FONTS_DIR}/Twemoji.ttf",uni=True)
             pdf.set_font("NotoSans", size=12)
             pdf.set_fallback_fonts(
                 ["NotoSansKR", "NotoSansJP", "NotoSansSC", "Twemoji"]
@@ -136,7 +142,11 @@ class PDFGenerator:
             # Generate full HTML body
             self.html_body = self._generate_html_body()
 
-            pdf.write_html(self.html_body)
+            pdf.write_html(self.html_body,tag_styles={
+                "code": FontFace(size_pt=18,emphasis="ITALICS", family="NotoSans"),
+                "code": TextStyle(color="#000093"),
+                "pre": TextStyle(t_margin=4 + 7 / 30, font_family="NotoSans"),
+            })
 
             # Save the pdf with name .pdf
             pdf_bytes = pdf.output()

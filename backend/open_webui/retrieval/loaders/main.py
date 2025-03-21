@@ -11,6 +11,7 @@ from langchain_community.document_loaders import (
     OutlookMessageLoader,
     PyPDFLoader,
     TextLoader,
+    UnstructuredPDFLoader,
     UnstructuredEPubLoader,
     UnstructuredExcelLoader,
     UnstructuredMarkdownLoader,
@@ -172,7 +173,8 @@ class Loader:
             )
         else:
             if file_ext == "pdf":
-                loader = PyPDFLoader(
+                log.info("processing with UnstructuredPDFLoader")
+                loader = UnstructuredPDFLoader(
                     file_path, extract_images=self.kwargs.get("PDF_EXTRACT_IMAGES")
                 )
             elif file_ext == "csv":

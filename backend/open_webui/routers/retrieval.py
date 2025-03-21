@@ -1,3 +1,4 @@
+import time
 import json
 import logging
 import mimetypes
@@ -713,6 +714,7 @@ async def get_query_settings(request: Request, user=Depends(get_admin_user)):
         "status": True,
         "template": request.app.state.config.RAG_TEMPLATE,
         "k": request.app.state.config.TOP_K,
+        "k_reranker": request.app.state.config.TOP_K_RERANKER,
         "r": request.app.state.config.RELEVANCE_THRESHOLD,
         "hybrid": request.app.state.config.ENABLE_RAG_HYBRID_SEARCH,
     }
@@ -720,6 +722,7 @@ async def get_query_settings(request: Request, user=Depends(get_admin_user)):
 
 class QuerySettingsForm(BaseModel):
     k: Optional[int] = None
+    k_reranker: Optional[int] = None
     r: Optional[float] = None
     template: Optional[str] = None
     hybrid: Optional[bool] = None
@@ -731,6 +734,7 @@ async def update_query_settings(
 ):
     request.app.state.config.RAG_TEMPLATE = form_data.template
     request.app.state.config.TOP_K = form_data.k if form_data.k else 4
+    request.app.state.config.TOP_K_RERANKER = form_data.k_reranker if form_data.k_reranker else 4
     request.app.state.config.RELEVANCE_THRESHOLD = form_data.r if form_data.r else 0.0
 
     request.app.state.config.ENABLE_RAG_HYBRID_SEARCH = (
@@ -741,6 +745,7 @@ async def update_query_settings(
         "status": True,
         "template": request.app.state.config.RAG_TEMPLATE,
         "k": request.app.state.config.TOP_K,
+        "k_reranker": request.app.state.config.TOP_K_RERANKER,
         "r": request.app.state.config.RELEVANCE_THRESHOLD,
         "hybrid": request.app.state.config.ENABLE_RAG_HYBRID_SEARCH,
     }
@@ -918,6 +923,11 @@ def process_file(
     user=Depends(get_verified_user),
 ):
     try:
+        root_directory = Path('./data')
+        num_bytes_ini=sum(f.stat().st_size for f in root_directory.glob('**/*') if f.is_file())
+        log.info("Data_folder_ini_size:%s bytes",num_bytes_ini)
+        tiempo_ini = time.time()
+        log.info("Init_Proccess_File in time:%s",tiempo_ini)
         file = Files.get_file_by_id(form_data.file_id)
 
         collection_name = form_data.collection_name
@@ -1057,7 +1067,15 @@ def process_file(
                             "collection_name": collection_name,
                         },
                     )
-
+                    tiempo_fin=time.time()
+                    log.info("End_Proccess_File in time:%s",tiempo_fin)
+                    tiempo_total=tiempo_fin-tiempo_ini
+                    log.info("Proccess_File_Total:%ssec",tiempo_total)
+                    root_directory = Path('./data')
+                    num_bytes_fin=sum(f.stat().st_size for f in root_directory.glob('**/*') if f.is_file())
+                    log.info("Data_folder_size_fin:%s bytes",num_bytes_fin)
+                    num_bytes_total=num_bytes_fin-num_bytes_ini
+                    log.info("Data_folder_size_fin:%s bytes",num_bytes_total)
                     return {
                         "status": True,
                         "collection_name": collection_name,
@@ -1067,13 +1085,22 @@ def process_file(
             except Exception as e:
                 raise e
         else:
+            tiempo_fin=time.time()
+            log.info("End_Proccess_File in time:%s",tiempo_fin)
+            tiempo_total=tiempo_fin-tiempo_ini
+            log.info("Proccess_File_in:%ssec",tiempo_total)
+
+            root_directory = Path('./data')
+            num_bytes_fin=sum(f.stat().st_size for f in root_directory.glob('**/*') if f.is_file())
+            log.info("Data_folder_size_fin:%s bytes",num_bytes_fin)
+            num_bytes_total=num_bytes_fin-num_bytes_ini
+            log.info("Data_folder_size_fin:%s bytes",num_bytes_total)
             return {
                 "status": True,
                 "collection_name": None,
                 "filename": file.filename,
                 "content": text_content,
             }
-
     except Exception as e:
         log.exception(e)
         if "No pandoc was found" in str(e):
@@ -1488,6 +1515,7 @@ class QueryDocForm(BaseModel):
     collection_name: str
     query: str
     k: Optional[int] = None
+    k_reranker: Optional[int] = None
     r: Optional[float] = None
     hybrid: Optional[bool] = None
 
@@ -1508,6 +1536,7 @@ def query_doc_handler(
                 ),
                 k=form_data.k if form_data.k else request.app.state.config.TOP_K,
                 reranking_function=request.app.state.rf,
+		k_reranker=form_data.k_reranker if form_data.k else request.app.state.config.TOP_K_RERANKER,
                 r=(
                     form_data.r
                     if form_data.r
@@ -1536,6 +1565,7 @@ class QueryCollectionsForm(BaseModel):
     collection_names: list[str]
     query: str
     k: Optional[int] = None
+    k_reranker: Optional[int] = None
     r: Optional[float] = None
     hybrid: Optional[bool] = None
 
@@ -1556,6 +1586,7 @@ def query_collection_handler(
                 ),
                 k=form_data.k if form_data.k else request.app.state.config.TOP_K,
                 reranking_function=request.app.state.rf,
+		k_reranker=form_data.k_reranker if form_data.k else request.app.state.config.TOP_K_RERANKER,
                 r=(
                     form_data.r
                     if form_data.r

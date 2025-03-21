@@ -1,9 +1,8 @@
 import logging
 import os
-import uuid
 from typing import Optional, Union
+from concurrent.futures import ThreadPoolExecutor
 
-import asyncio
 import requests
 import hashlib
 
@@ -102,18 +101,18 @@ def get_doc(collection_name: str, user: UserModel = None):
 
 def query_doc_with_hybrid_search(
     collection_name: str,
+    collection_data,
     query: str,
     embedding_function,
     k: int,
     reranking_function,
+    k_reranker: int,
     r: float,
 ) -> dict:
     try:
-        result = VECTOR_DB_CLIENT.get(collection_name=collection_name)
-
         bm25_retriever = BM25Retriever.from_texts(
-            texts=result.documents[0],
-            metadatas=result.metadatas[0],
+            texts=collection_data.documents[0],
+            metadatas=collection_data.metadatas[0],
         )
         bm25_retriever.k = k
 
@@ -126,9 +125,10 @@ def query_doc_with_hybrid_search(
         ensemble_retriever = EnsembleRetriever(
             retrievers=[bm25_retriever, vector_search_retriever], weights=[0.5, 0.5]
         )
+
         compressor = RerankCompressor(
             embedding_function=embedding_function,
-            top_n=k,
+            top_n=k_reranker,
             reranking_function=reranking_function,
             r_score=r,
         )
@@ -137,18 +137,28 @@ def query_doc_with_hybrid_search(
             base_compressor=compressor, base_retriever=ensemble_retriever
         )
 
-        result = compression_retriever.invoke(query)
-        result = {
-            "distances": [[d.metadata.get("score") for d in result]],
-            "documents": [[d.page_content for d in result]],
-            "metadatas": [[d.metadata for d in result]],
-        }
+        collection_data = compression_retriever.invoke(query)
 
+        distances = [d.metadata.get("score") for d in collection_data]
+        documents = [d.page_content for d in collection_data]
+        metadatas = [d.metadata for d in collection_data]
+
+        # retrieve only min(k, k_reranker) items, sort and cut by distance if k < k_reranker
+        if k < k_reranker:
+            sorted_items = sorted(zip(distances, metadatas, documents), key=lambda x: x[0], reverse=True)
+            sorted_items = sorted_items[:k]
+            distances, documents, metadatas = map(list, zip(*sorted_items))
+       	collection_data = {
+            "distances": [distances],
+            "documents": [documents],
+            "metadatas": [metadatas],
+        }
         log.info(
             "query_doc_with_hybrid_search:result "
-            + f'{result["metadatas"]} {result["distances"]}'
+            + f'{collection_data["metadatas"]} {collection_data["distances"]}'
         )
-        return result
+
+        return collection_data
     except Exception as e:
         raise e
 
@@ -175,36 +185,60 @@ def merge_get_results(get_results: list[dict]) -> dict:
 
 
 def merge_and_sort_query_results(
-    query_results: list[dict], k: int, reverse: bool = False
+    query_results: list[dict], k: int
 ) -> dict:
-    # Initialize lists to store combined data
-    combined = []
-    seen_hashes = set()  # To store unique document hashes
+    if VECTOR_DB == "chroma":
+        # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
+        # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
+        reverse = False
+    else:
+        reverse = True
 
+    combined = dict() # To store documents with unique document hashes
+    
+    # Process all results in a single pass
     for data in query_results:
         distances = data["distances"][0]
         documents = data["documents"][0]
         metadatas = data["metadatas"][0]
+        # Pre-compute document hashes in batch if all are strings
+        if all(isinstance(doc, str) for doc in documents):
+            for distance, document, metadata in zip(distances, documents, metadatas):
+                doc_hash = hashlib.md5(document.encode()).hexdigest()
+                
+                if doc_hash not in combined.keys():
+                    combined[doc_hash] = (distance, document, metadata)
+                    continue  # if doc is new, no further comparison is needed
 
-        for distance, document, metadata in zip(distances, documents, metadatas):
-            if isinstance(document, str):
-                doc_hash = hashlib.md5(
-                    document.encode()
-                ).hexdigest()  # Compute a hash for uniqueness
+                # if doc is alredy in, but new distance is better, update
+                if not reverse and distance < combined[doc_hash][0]:
+                    # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
+                    # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
+                    combined[doc_hash] = (distance, document, metadata)
+                if reverse and distance > combined[doc_hash][0]:
+                    combined[doc_hash] = (distance, document, metadata)
 
-                if doc_hash not in seen_hashes:
-                    seen_hashes.add(doc_hash)
-                    combined.append((distance, document, metadata))
-
-    # Sort the list based on distances
+    combined = list(combined.values())    
+    # Early return for empty results
+    if not combined:
+        return {
+            "distances": [[]],
+            "documents": [[]],
+            "metadatas": [[]],
+        }
+    
     combined.sort(key=lambda x: x[0], reverse=reverse)
-
-    # Slice to keep only the top k elements
-    sorted_distances, sorted_documents, sorted_metadatas = (
-        zip(*combined[:k]) if combined else ([], [], [])
-    )
-
-    # Create and return the output dictionary
+    
+    # Truncate to top k results
+    combined = combined[:k]
+    
+    sorted_distances, sorted_documents, sorted_metadatas = map(list, zip(*combined))
+    
+  # if chromaDB, the distance is 0 (best) to 2 (worse)
+    # re-order to -1 (worst) to 1 (best) for relevance score
+    if not reverse:
+        sorted_distances = tuple(-dist for dist in sorted_distances)
+        sorted_distances = tuple(dist + 1 for dist in sorted_distances)   
     return {
         "distances": [list(sorted_distances)],
         "documents": [list(sorted_documents)],
@@ -253,12 +287,7 @@ def query_collection(
             else:
                 pass
 
-    if VECTOR_DB == "chroma":
-        # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
-        # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
-        return merge_and_sort_query_results(results, k=k, reverse=False)
-    else:
-        return merge_and_sort_query_results(results, k=k, reverse=True)
+    return merge_and_sort_query_results(results, k=k)
 
 
 def query_collection_with_hybrid_search(
@@ -271,36 +300,58 @@ def query_collection_with_hybrid_search(
 ) -> dict:
     results = []
     error = False
-    for collection_name in collection_names:
+
+    # Fetch collection data once per collection
+    collection_data = {}
+    with ThreadPoolExecutor() as executor:
+        future_results = {
+            collection_name: executor.submit(VECTOR_DB_CLIENT.get, collection_name=collection_name)
+            for collection_name in collection_names
+        }
+
+        for collection_name, future in future_results.items():
+            try:
+                collection_data[collection_name] = future.result()
+            except Exception as e:
+                log.exception(f"Failed to fetch collection {collection_name}: {e}")
+                collection_data[collection_name] = None
+
+    def process_query(collection_name, query):
         try:
-            for query in queries:
-                result = query_doc_with_hybrid_search(
-                    collection_name=collection_name,
-                    query=query,
-                    embedding_function=embedding_function,
-                    k=k,
-                    reranking_function=reranking_function,
-                    r=r,
-                )
-                results.append(result)
-        except Exception as e:
-            log.exception(
-                "Error when querying the collection with " f"hybrid_search: {e}"
+            # Fetch pre-loaded collection data
+            if collection_data[collection_name] is None:
+                raise Exception(f"Collection data for {collection_name} is unavailable.")
+
+            result = query_doc_with_hybrid_search(
+                collection_name=collection_name,
+                collection_data=collection_data[collection_name],
+                query=query,
+                embedding_function=embedding_function,
+                k=k,
+                reranking_function=reranking_function,
+                r=r,
             )
+            return result, None
+        except Exception as e:
+            log.exception(f"Error when querying the collection with hybrid_search: {e}")
+            return None, e
+
+    tasks = [(collection_name, query) for collection_name in collection_names for query in queries]
+
+    with ThreadPoolExecutor() as executor:
+        future_results = [executor.submit(process_query, cn, q) for cn, q in tasks]
+        task_results = [future.result() for future in future_results]
+
+    for result, err in task_results:
+        if err is not None:
             error = True
+        elif result is not None:
+            results.append(result)
 
-    if error:
-        raise Exception(
-            "Hybrid search failed for all collections. Using Non hybrid search as fallback."
-        )
+    if error and not results:
+        raise Exception("Hybrid search failed for all collections. Using Non-hybrid search as fallback.")
 
-    if VECTOR_DB == "chroma":
-        # Chroma uses unconventional cosine similarity, so we don't need to reverse the results
-        # https://docs.trychroma.com/docs/collections/configure#configuring-chroma-collections
-        return merge_and_sort_query_results(results, k=k, reverse=False)
-    else:
-        return merge_and_sort_query_results(results, k=k, reverse=True)
-
+    return merge_and_sort_query_results(results, k=k_reranker, reverse=True)
 
 def get_embedding_function(
     embedding_engine,
@@ -345,6 +396,7 @@ def get_sources_from_files(
     embedding_function,
     k,
     reranking_function,
+    k_reranker,
     r,
     hybrid_search,
     full_context=False,
@@ -461,6 +513,7 @@ def get_sources_from_files(
                                     embedding_function=embedding_function,
                                     k=k,
                                     reranking_function=reranking_function,
+                                    k_reranker=k_reranker,
                                     r=r,
                                 )
                             except Exception as e:

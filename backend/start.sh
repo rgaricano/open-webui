@@ -39,6 +39,8 @@ fi
 if [[ "${USE_CUDA_DOCKER,,}" == "true" ]]; then
   echo "CUDA is enabled, appending LD_LIBRARY_PATH to include torch/cudnn & cublas libraries."
   export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib/python3.11/site-packages/torch/lib:/usr/local/lib/python3.11/site-packages/nvidia/cudnn/lib"
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib/python3.12/site-packages/torch/lib:/usr/local/lib/python3.12/site-packages/nvidia/cudnn/lib"
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/ricardo/.local/lib/python3.12/site-packages/torch/lib:/home/ricardo/.local/lib/python3.12/site-packages/nvidia/cudnn/lib"
 fi
 
 # Check if SPACE_ID is set, if so, configure for space
@@ -49,12 +51,12 @@ if [ -n "$SPACE_ID" ]; then
     WEBUI_SECRET_KEY="$WEBUI_SECRET_KEY" uvicorn open_webui.main:app --host "$HOST" --port "$PORT" --forwarded-allow-ips '*' &
     webui_pid=$!
     echo "Waiting for webui to start..."
-    while ! curl -s http://localhost:8080/health > /dev/null; do
+    while ! curl -s $HOST:$PORT/health > /dev/null; do
       sleep 1
     done
     echo "Creating admin user..."
     curl \
-      -X POST "http://localhost:8080/api/v1/auths/signup" \
+      -X POST "$HOST:$PORT/api/v1/auths/signup" \
       -H "accept: application/json" \
       -H "Content-Type: application/json" \
       -d "{ \"email\": \"${ADMIN_USER_EMAIL}\", \"password\": \"${ADMIN_USER_PASSWORD}\", \"name\": \"Admin\" }"
