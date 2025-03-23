@@ -202,9 +202,12 @@
 
 		const model = atSelectedModel ?? $models.find((m) => m.id === selectedModels[0]);
 		if (model) {
-			selectedToolIds = (model?.info?.meta?.toolIds ?? []).filter((id) =>
-				$tools.find((t) => t.id === id)
-			);
+			// Only enable tools that don't have show_button set to true
+			selectedToolIds = (model?.info?.meta?.toolIds ?? [])
+				.filter((id) => {
+					const tool = $tools.find((t) => t.id === id);
+					return tool && !(tool.meta?.show_button ?? false);
+				});
 		}
 	};
 

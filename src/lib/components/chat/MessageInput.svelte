@@ -46,6 +46,7 @@
 	import Photo from '../icons/Photo.svelte';
 	import CommandLine from '../icons/CommandLine.svelte';
 	import { KokoroWorker } from '$lib/workers/KokoroWorker';
+	import WrenchSolid from '../icons/WrenchSolid.svelte';
 
 	const i18n = getContext('i18n');
 
@@ -981,9 +982,8 @@
 														const commandOptionButton = [
 															...document.getElementsByClassName('selected-command-option-button')
 														]?.at(-1);
-
 														commandOptionButton?.click();
-													}
+													}													
 												} else {
 													if (
 														!$mobile ||
@@ -1226,6 +1226,34 @@
 														</button>
 													</Tooltip>
 												{/if}
+
+												{#each $tools as tool}
+													{#if tool.meta?.show_button ?? true}
+														{#if atSelectedModel ? $models.find(m => m.id === atSelectedModel)?.info?.meta?.toolIds?.includes(tool.id) : selectedModels.some(modelId => $models.find(m => m.id === modelId)?.info?.meta?.toolIds?.includes(tool.id))}
+															<Tooltip content={tool.meta?.description ?? ''} placement="top">
+																<button
+																	on:click|preventDefault={() => {
+																		if (selectedToolIds.includes(tool.id)) {
+																			selectedToolIds = selectedToolIds.filter(id => id !== tool.id);
+																		} else {
+																			selectedToolIds = [...selectedToolIds, tool.id];
+																		}
+																	}}
+																	type="button"
+																	class="px-1.5 @sm:px-2.5 py-1.5 flex gap-1.5 items-center text-sm rounded-full font-medium transition-colors duration-300 focus:outline-hidden max-w-full overflow-hidden {selectedToolIds.includes(tool.id)
+																		? 'bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400'
+																		: 'bg-transparent text-gray-600 dark:text-gray-300 border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'}"
+																>
+																	<WrenchSolid className="size-5" strokeWidth="1.75" />
+																	<span
+																		class="hidden @sm:block whitespace-nowrap overflow-hidden text-ellipsis translate-y-[0.5px] mr-0.5"
+																		>{tool.meta?.button_text || tool.name}</span
+																	>
+																</button>
+															</Tooltip>
+														{/if}
+													{/if}
+												{/each}
 											{/if}
 										</div>
 									</div>
