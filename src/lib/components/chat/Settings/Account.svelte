@@ -31,8 +31,8 @@
 	let profileImageInputElement: HTMLInputElement;
 
 	const submitHandler = async () => {
-		if (name !== $user.name) {
-			if (profileImageUrl === generateInitialsImage($user.name) || profileImageUrl === '') {
+		if (name !== $user?.name) {
+			if (profileImageUrl === generateInitialsImage($user?.name) || profileImageUrl === '') {
 				profileImageUrl = generateInitialsImage(name);
 			}
 		}
@@ -75,8 +75,8 @@
 	};
 
 	onMount(async () => {
-		name = $user.name;
-		profileImageUrl = $user.profile_image_url;
+		name = $user?.name;
+		profileImageUrl = $user?.profile_image_url;
 		webhookUrl = $settings?.notifications?.webhook_url ?? '';
 
 		APIKey = await getAPIKey(localStorage.token).catch((error) => {
@@ -214,7 +214,7 @@
 						<button
 							class=" text-xs text-center text-gray-800 dark:text-gray-400 rounded-full px-4 py-0.5 bg-gray-100 dark:bg-gray-850"
 							on:click={async () => {
-								const url = await getGravatarUrl(localStorage.token, $user.email);
+								const url = await getGravatarUrl(localStorage.token, $user?.email);
 
 								profileImageUrl = url;
 							}}>{$i18n.t('Use Gravatar')}</button
@@ -245,21 +245,23 @@
 				</div>
 			</div>
 
-			<div class="pt-2">
-				<div class="flex flex-col w-full">
-					<div class=" mb-1 text-xs font-medium">{$i18n.t('Notification Webhook')}</div>
+			{#if $config?.features?.enable_user_webhooks}
+				<div class="pt-2">
+					<div class="flex flex-col w-full">
+						<div class=" mb-1 text-xs font-medium">{$i18n.t('Notification Webhook')}</div>
 
-					<div class="flex-1">
-						<input
-							class="w-full rounded-lg py-2 px-4 text-sm dark:text-gray-300 dark:bg-gray-850 outline-hidden"
-							type="url"
-							placeholder={$i18n.t('Enter your webhook URL')}
-							bind:value={webhookUrl}
-							required
-						/>
+						<div class="flex-1">
+							<input
+								class="w-full rounded-lg py-2 px-4 text-sm dark:text-gray-300 dark:bg-gray-850 outline-hidden"
+								type="url"
+								placeholder={$i18n.t('Enter your webhook URL')}
+								bind:value={webhookUrl}
+								required
+							/>
+						</div>
 					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 
 		<div class="py-0.5">

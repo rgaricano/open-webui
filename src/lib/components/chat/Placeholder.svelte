@@ -38,6 +38,8 @@
 	export let codeInterpreterEnabled = false;
 	export let webSearchEnabled = false;
 
+	export let toolServers = [];
+
 	let models = [];
 
 	const selectSuggestionPrompt = async (p) => {
@@ -140,7 +142,7 @@
 					{#if models[selectedModelIdx]?.name}
 						{models[selectedModelIdx]?.name}
 					{:else}
-						{$i18n.t('Hello, {{name}}', { name: $user.name })}
+						{$i18n.t('Hello, {{name}}', { name: $user?.name })}
 					{/if}
 				</div>
 			</div>
@@ -196,6 +198,7 @@
 					bind:codeInterpreterEnabled
 					bind:webSearchEnabled
 					bind:atSelectedModel
+					{toolServers}
 					{transparentBackground}
 					{stopResponse}
 					{createMessagePair}

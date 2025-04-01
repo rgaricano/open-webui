@@ -5,7 +5,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { onMount, tick, getContext } from 'svelte';
 	import type { Writable } from 'svelte/store';
-	import type { i18n as i18nType } from 'i18next';
+	import type { i18n as i18nType, t } from 'i18next';
 
 	const i18n = getContext<Writable<i18nType>>('i18n');
 
@@ -110,6 +110,7 @@
 
 	export let siblings;
 
+	export let gotoMessage: Function = () => {};
 	export let showPreviousMessage: Function;
 	export let showNextMessage: Function;
 
@@ -138,6 +139,8 @@
 	let edit = false;
 	let editedContent = '';
 	let editTextAreaElement: HTMLTextAreaElement;
+
+	let messageIndexEdit = false;
 
 	let audioParts: Record<number, HTMLAudioElement | null> = {};
 	let speaking = false;
@@ -739,7 +742,7 @@
 										{history}
 										content={message.content}
 										sources={message.sources}
-										floatingButtons={message?.done}
+										floatingButtons={message?.done && !readOnly}
 										save={!readOnly}
 										{model}
 										onTaskClick={async (e) => {
@@ -846,11 +849,50 @@
 										</svg>
 									</button>
 
-									<div
-										class="text-sm tracking-widest font-semibold self-center dark:text-gray-100 min-w-fit"
-									>
-										{siblings.indexOf(message.id) + 1}/{siblings.length}
-									</div>
+									{#if messageIndexEdit}
+										<div
+											class="text-sm flex justify-center font-semibold self-center dark:text-gray-100 min-w-fit"
+										>
+											<input
+												id="message-index-input-{message.id}"
+												type="number"
+												value={siblings.indexOf(message.id) + 1}
+												min="1"
+												max={siblings.length}
+												on:focus={(e) => {
+													e.target.select();
+												}}
+												on:blur={(e) => {
+													gotoMessage(message, e.target.value - 1);
+													messageIndexEdit = false;
+												}}
+												on:keydown={(e) => {
+													if (e.key === 'Enter') {
+														gotoMessage(message, e.target.value - 1);
+														messageIndexEdit = false;
+													}
+												}}
+												class="bg-transparent font-semibold self-center dark:text-gray-100 min-w-fit outline-hidden"
+											/>/{siblings.length}
+										</div>
+									{:else}
+										<!-- svelte-ignore a11y-no-static-element-interactions -->
+										<div
+											class="text-sm tracking-widest font-semibold self-center dark:text-gray-100 min-w-fit"
+											on:dblclick={async () => {
+												messageIndexEdit = true;
+
+												await tick();
+												const input = document.getElementById(`message-index-input-${message.id}`);
+												if (input) {
+													input.focus();
+													input.select();
+												}
+											}}
+										>
+											{siblings.indexOf(message.id) + 1}/{siblings.length}
+										</div>
+									{/if}
 
 									<button
 										class="self-center p-1 hover:bg-black/5 dark:hover:bg-white/5 dark:hover:text-white hover:text-black rounded-md transition"
@@ -878,7 +920,7 @@
 
 							{#if message.done}
 								{#if !readOnly}
-									{#if $user.role === 'user' ? ($user?.permissions?.chat?.edit ?? true) : true}
+									{#if $user?.role === 'user' ? ($user?.permissions?.chat?.edit ?? true) : true}
 										<Tooltip content={$i18n.t('Edit')} placement="bottom">
 											<button
 												class="{isLastMessage
@@ -1011,7 +1053,7 @@
 									</button>
 								</Tooltip>
 
-								{#if $config?.features.enable_image_generation && ($user.role === 'admin' || $user?.permissions?.features?.image_generation) && !readOnly}
+								{#if $config?.features.enable_image_generation && ($user?.role === 'admin' || $user?.permissions?.features?.image_generation) && !readOnly}
 									<Tooltip content={$i18n.t('Generate Image')} placement="bottom">
 										<button
 											class="{isLastMessage

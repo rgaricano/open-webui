@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { prompts, user } from '$lib/stores';
+	import { prompts, settings, user } from '$lib/stores';
 	import {
 		findWordIndices,
 		getUserPosition,
@@ -86,7 +86,7 @@
 
 		if (command.content.includes('{{USER_NAME}}')) {
 			console.log($user);
-			const name = $user.name || 'User';
+			const name = $user?.name || 'User';
 			text = text.replaceAll('{{USER_NAME}}', name);
 		}
 
@@ -120,12 +120,21 @@
 			text = text.replaceAll('{{CURRENT_WEEKDAY}}', weekday);
 		}
 
-		const promptWords = prompt.split(' ');
+		const lines = prompt.split('\n');
+		const lastLine = lines.pop();
 
-		promptWords.pop();
-		promptWords.push(`${text}`);
+		const lastLineWords = lastLine.split(' ');
+		const lastWord = lastLineWords.pop();
 
-		prompt = promptWords.join(' ');
+		if ($settings?.richTextInput ?? true) {
+			lastLineWords.push(`${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}`);
+			lines.push(lastLineWords.join(' '));
+		} else {
+			lastLineWords.push(text);
+			lines.push(lastLineWords.join(' '));
+		}
+
+		prompt = lines.join('\n');
 
 		const chatInputContainerElement = document.getElementById('chat-input-container');
 		const chatInputElement = document.getElementById('chat-input');
