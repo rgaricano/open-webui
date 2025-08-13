@@ -1,0 +1,400 @@
+open_webui
+├── alembic.ini
+├── config.py
+├── constants.py
+├── data
+│   └── readme.txt
+├── env.py
+├── functions.py
+├── __init__.py
+├── internal
+│   ├── db.py
+│   ├── migrations
+│   │   ├── 001_initial_schema.py
+│   │   ├── 002_add_local_sharing.py
+│   │   ├── 003_add_auth_api_key.py
+│   │   ├── 004_add_archived.py
+│   │   ├── 005_add_updated_at.py
+│   │   ├── 006_migrate_timestamps_and_charfields.py
+│   │   ├── 007_add_user_last_active_at.py
+│   │   ├── 008_add_memory.py
+│   │   ├── 009_add_models.py
+│   │   ├── 010_migrate_modelfiles_to_models.py
+│   │   ├── 011_add_user_settings.py
+│   │   ├── 012_add_tools.py
+│   │   ├── 013_add_user_info.py
+│   │   ├── 014_add_files.py
+│   │   ├── 015_add_functions.py
+│   │   ├── 016_add_valves_and_is_active.py
+│   │   ├── 017_add_user_oauth_sub.py
+│   │   └── 018_add_function_is_global.py
+│   ├── __pycache__
+│   │   ├── db.cpython-312.pyc
+│   │   └── wrappers.cpython-312.pyc
+│   └── wrappers.py
+├── main.py
+├── migrations
+│   ├── env.py
+│   ├── __pycache__
+│   │   ├── env.cpython-312.pyc
+│   │   └── util.cpython-312.pyc
+│   ├── README
+│   ├── script.py.mako
+│   ├── util.py
+│   └── versions
+│       ├── 1af9b942657b_migrate_tags.py
+│       ├── 242a2047eae0_update_chat_table.py
+│       ├── 3781e22d8b01_update_message_table.py
+│       ├── 3ab32c4b8f59_update_tags.py
+│       ├── 4ace53fd72c8_update_folder_table_datetime.py
+│       ├── 57c599a3cb57_add_channel_table.py
+│       ├── 6a39f3d8e55c_add_knowledge_table.py
+│       ├── 7826ab40b532_update_file_table.py
+│       ├── 7e5b5dc7342b_init.py
+│       ├── 922e7a387820_add_group_table.py
+│       ├── 9f0c9cd09105_add_note_table.py
+│       ├── af906e964978_add_feedback_table.py
+│       ├── c0fbf31ca0db_update_file_table.py
+│       ├── c29facfe716b_update_file_table_path.py
+│       ├── c69f45358db4_add_folder_table.py
+│       ├── ca81bd47c050_add_config_table.py
+│       ├── d31026856c01_update_folder_table_data.py
+│       └── __pycache__
+│           ├── 1af9b942657b_migrate_tags.cpython-312.pyc
+│           ├── 242a2047eae0_update_chat_table.cpython-312.pyc
+│           ├── 3781e22d8b01_update_message_table.cpython-312.pyc
+│           ├── 3ab32c4b8f59_update_tags.cpython-312.pyc
+│           ├── 4ace53fd72c8_update_folder_table_datetime.cpython-312.pyc
+│           ├── 57c599a3cb57_add_channel_table.cpython-312.pyc
+│           ├── 6a39f3d8e55c_add_knowledge_table.cpython-312.pyc
+│           ├── 7826ab40b532_update_file_table.cpython-312.pyc
+│           ├── 7e5b5dc7342b_init.cpython-312.pyc
+│           ├── 922e7a387820_add_group_table.cpython-312.pyc
+│           ├── 9f0c9cd09105_add_note_table.cpython-312.pyc
+│           ├── af906e964978_add_feedback_table.cpython-312.pyc
+│           ├── c0fbf31ca0db_update_file_table.cpython-312.pyc
+│           ├── c29facfe716b_update_file_table_path.cpython-312.pyc
+│           ├── c69f45358db4_add_folder_table.cpython-312.pyc
+│           ├── ca81bd47c050_add_config_table.cpython-312.pyc
+│           └── d31026856c01_update_folder_table_data.cpython-312.pyc
+├── models
+│   ├── auths.py
+│   ├── channels.py
+│   ├── chats.py
+│   ├── feedbacks.py
+│   ├── files.py
+│   ├── folders.py
+│   ├── functions.py
+│   ├── groups.py
+│   ├── knowledge.py
+│   ├── memories.py
+│   ├── messages.py
+│   ├── models.py
+│   ├── notes.py
+│   ├── prompts.py
+│   ├── __pycache__
+│   │   ├── auths.cpython-312.pyc
+│   │   ├── channels.cpython-312.pyc
+│   │   ├── chats.cpython-312.pyc
+│   │   ├── feedbacks.cpython-312.pyc
+│   │   ├── files.cpython-312.pyc
+│   │   ├── folders.cpython-312.pyc
+│   │   ├── functions.cpython-312.pyc
+│   │   ├── groups.cpython-312.pyc
+│   │   ├── knowledge.cpython-312.pyc
+│   │   ├── memories.cpython-312.pyc
+│   │   ├── messages.cpython-312.pyc
+│   │   ├── models.cpython-312.pyc
+│   │   ├── notes.cpython-312.pyc
+│   │   ├── prompts.cpython-312.pyc
+│   │   ├── tags.cpython-312.pyc
+│   │   ├── tools.cpython-312.pyc
+│   │   └── users.cpython-312.pyc
+│   ├── tags.py
+│   ├── tools.py
+│   └── users.py
+├── __pycache__
+│   ├── config.cpython-312.pyc
+│   ├── constants.cpython-312.pyc
+│   ├── env.cpython-312.pyc
+│   ├── functions.cpython-312.pyc
+│   ├── __init__.cpython-312.pyc
+│   ├── main.cpython-312.pyc
+│   └── tasks.cpython-312.pyc
+├── retrieval
+│   ├── loaders
+│   │   ├── datalab_marker.py
+│   │   ├── external_document.py
+│   │   ├── external_web.py
+│   │   ├── main.py
+│   │   ├── mistral.py
+│   │   ├── __pycache__
+│   │   │   ├── datalab_marker.cpython-312.pyc
+│   │   │   ├── external.cpython-312.pyc
+│   │   │   ├── external_document.cpython-312.pyc
+│   │   │   ├── external_web.cpython-312.pyc
+│   │   │   ├── main.cpython-312.pyc
+│   │   │   ├── mistral.cpython-312.pyc
+│   │   │   ├── tavily.cpython-312.pyc
+│   │   │   └── youtube.cpython-312.pyc
+│   │   ├── tavily.py
+│   │   └── youtube.py
+│   ├── models
+│   │   ├── base_reranker.py
+│   │   ├── colbert.py
+│   │   ├── external.py
+│   │   └── __pycache__
+│   │       ├── base_reranker.cpython-312.pyc
+│   │       └── external.cpython-312.pyc
+│   ├── __pycache__
+│   │   └── utils.cpython-312.pyc
+│   ├── utils.py
+│   ├── vector
+│   │   ├── dbs
+│   │   │   ├── chroma.py
+│   │   │   ├── elasticsearch.py
+│   │   │   ├── milvus.py
+│   │   │   ├── opensearch.py
+│   │   │   ├── pgvector.py
+│   │   │   ├── pinecone.py
+│   │   │   ├── __pycache__
+│   │   │   │   └── pgvector.cpython-312.pyc
+│   │   │   ├── qdrant_multitenancy.py
+│   │   │   └── qdrant.py
+│   │   ├── factory.py
+│   │   ├── main.py
+│   │   ├── __pycache__
+│   │   │   ├── connector.cpython-312.pyc
+│   │   │   ├── factory.cpython-312.pyc
+│   │   │   ├── main.cpython-312.pyc
+│   │   │   └── type.cpython-312.pyc
+│   │   └── type.py
+│   └── web
+│       ├── bing.py
+│       ├── bocha.py
+│       ├── brave.py
+│       ├── duckduckgo.py
+│       ├── exa.py
+│       ├── external.py
+│       ├── firecrawl.py
+│       ├── google_pse.py
+│       ├── jina_search.py
+│       ├── kagi.py
+│       ├── main.py
+│       ├── mojeek.py
+│       ├── perplexity.py
+│       ├── __pycache__
+│       │   ├── bing.cpython-312.pyc
+│       │   ├── bocha.cpython-312.pyc
+│       │   ├── brave.cpython-312.pyc
+│       │   ├── duckduckgo.cpython-312.pyc
+│       │   ├── exa.cpython-312.pyc
+│       │   ├── external.cpython-312.pyc
+│       │   ├── firecrawl.cpython-312.pyc
+│       │   ├── google_pse.cpython-312.pyc
+│       │   ├── jina_search.cpython-312.pyc
+│       │   ├── kagi.cpython-312.pyc
+│       │   ├── main.cpython-312.pyc
+│       │   ├── mojeek.cpython-312.pyc
+│       │   ├── perplexity.cpython-312.pyc
+│       │   ├── searchapi.cpython-312.pyc
+│       │   ├── searxng.cpython-312.pyc
+│       │   ├── serpapi.cpython-312.pyc
+│       │   ├── serper.cpython-312.pyc
+│       │   ├── serply.cpython-312.pyc
+│       │   ├── serpstack.cpython-312.pyc
+│       │   ├── sougou.cpython-312.pyc
+│       │   ├── tavily.cpython-312.pyc
+│       │   ├── utils.cpython-312.pyc
+│       │   └── yacy.cpython-312.pyc
+│       ├── searchapi.py
+│       ├── searxng.py
+│       ├── serpapi.py
+│       ├── serper.py
+│       ├── serply.py
+│       ├── serpstack.py
+│       ├── sougou.py
+│       ├── tavily.py
+│       ├── testdata
+│       │   ├── bing.json
+│       │   ├── brave.json
+│       │   ├── google_pse.json
+│       │   ├── searchapi.json
+│       │   ├── searxng.json
+│       │   ├── serper.json
+│       │   ├── serply.json
+│       │   └── serpstack.json
+│       ├── utils.py
+│       └── yacy.py
+├── routers
+│   ├── audio.py
+│   ├── auths.py
+│   ├── channels.py
+│   ├── chats.py
+│   ├── configs.py
+│   ├── evaluations.py
+│   ├── files.py
+│   ├── folders.py
+│   ├── functions.py
+│   ├── groups.py
+│   ├── images.py
+│   ├── knowledge.py
+│   ├── memories.py
+│   ├── models.py
+│   ├── notes.py
+│   ├── ollama.py
+│   ├── ollama.py.backGP
+│   ├── ollama.py.bcfFIX
+│   ├── openai.py
+│   ├── pipelines.py
+│   ├── prompts.py
+│   ├── __pycache__
+│   │   ├── audio.cpython-312.pyc
+│   │   ├── auths.cpython-312.pyc
+│   │   ├── channels.cpython-312.pyc
+│   │   ├── chats.cpython-312.pyc
+│   │   ├── configs.cpython-312.pyc
+│   │   ├── evaluations.cpython-312.pyc
+│   │   ├── files.cpython-312.pyc
+│   │   ├── folders.cpython-312.pyc
+│   │   ├── functions.cpython-312.pyc
+│   │   ├── groups.cpython-312.pyc
+│   │   ├── images.cpython-312.pyc
+│   │   ├── knowledge.cpython-312.pyc
+│   │   ├── memories.cpython-312.pyc
+│   │   ├── models.cpython-312.pyc
+│   │   ├── notes.cpython-312.pyc
+│   │   ├── ollama.cpython-312.pyc
+│   │   ├── openai.cpython-312.pyc
+│   │   ├── pipelines.cpython-312.pyc
+│   │   ├── prompts.cpython-312.pyc
+│   │   ├── retrieval.cpython-312.pyc
+│   │   ├── tasks.cpython-312.pyc
+│   │   ├── tools.cpython-312.pyc
+│   │   ├── users.cpython-312.pyc
+│   │   └── utils.cpython-312.pyc
+│   ├── retrieval.py
+│   ├── retrieval.py.save
+│   ├── tasks.py
+│   ├── tools.py
+│   ├── users.py
+│   └── utils.py
+├── socket
+│   ├── main.py
+│   ├── __pycache__
+│   │   ├── main.cpython-312.pyc
+│   │   └── utils.cpython-312.pyc
+│   └── utils.py
+├── static
+│   ├── apple-touch-icon.png
+│   ├── assets
+│   │   └── pdf-style.css
+│   ├── custom.css
+│   ├── favicon-96x96.png
+│   ├── favicon-dark.ico
+│   ├── favicon-dark.png
+│   ├── favicon.ico
+│   ├── favicon.png
+│   ├── favicon.svg
+│   ├── fonts
+│   │   ├── NotoSans-Bold.ttf
+│   │   ├── NotoSans-Italic.ttf
+│   │   ├── NotoSansJP-Regular.ttf
+│   │   ├── NotoSansJP-Variable.ttf
+│   │   ├── NotoSansKR-Regular.ttf
+│   │   ├── NotoSansKR-Variable.ttf
+│   │   ├── NotoSans-Regular.ttf
+│   │   ├── NotoSansSC-Regular.ttf
+│   │   ├── NotoSansSC-Variable.ttf
+│   │   ├── NotoSans-Variable.ttf
+│   │   └── Twemoji.ttf
+│   ├── loader.js
+│   ├── logo.png
+│   ├── site.webmanifest
+│   ├── splash-dark.png
+│   ├── splash.png
+│   ├── swagger-ui
+│   │   ├── favicon.png
+│   │   ├── swagger-ui-bundle.js
+│   │   └── swagger-ui.css
+│   ├── user-import.csv
+│   ├── web-app-manifest-192x192.png
+│   └── web-app-manifest-512x512.png
+├── storage
+│   ├── provider.py
+│   └── __pycache__
+│       └── provider.cpython-312.pyc
+├── tasks.py
+├── test
+│   ├── apps
+│   │   └── webui
+│   │       ├── routers
+│   │       │   ├── test_auths.py
+│   │       │   ├── test_chats.py
+│   │       │   ├── test_models.py
+│   │       │   ├── test_prompts.py
+│   │       │   └── test_users.py
+│   │       └── storage
+│   │           └── test_provider.py
+│   ├── __init__.py
+│   └── util
+│       ├── abstract_integration_test.py
+│       ├── mock_user.py
+│       └── test_redis.py
+└── utils
+    ├── access_control.py
+    ├── audit.py
+    ├── auth.py
+    ├── chat.py
+    ├── code_interpreter.py
+    ├── embeddings.py
+    ├── filter.py
+    ├── images
+    │   ├── comfyui.py
+    │   └── __pycache__
+    │       └── comfyui.cpython-312.pyc
+    ├── logger.py
+    ├── middleware.py
+    ├── misc.py
+    ├── models.py
+    ├── oauth.py
+    ├── payload.py
+    ├── pdf_generator.py
+    ├── plugin.py
+    ├── __pycache__
+    │   ├── access_control.cpython-312.pyc
+    │   ├── audit.cpython-312.pyc
+    │   ├── auth.cpython-312.pyc
+    │   ├── chat.cpython-312.pyc
+    │   ├── code_interpreter.cpython-312.pyc
+    │   ├── embeddings.cpython-312.pyc
+    │   ├── filter.cpython-312.pyc
+    │   ├── logger.cpython-312.pyc
+    │   ├── middleware.cpython-312.pyc
+    │   ├── misc.cpython-312.pyc
+    │   ├── models.cpython-312.pyc
+    │   ├── oauth.cpython-312.pyc
+    │   ├── payload.cpython-312.pyc
+    │   ├── pdf_generator.cpython-312.pyc
+    │   ├── plugin.cpython-312.pyc
+    │   ├── redis.cpython-312.pyc
+    │   ├── response.cpython-312.pyc
+    │   ├── security_headers.cpython-312.pyc
+    │   ├── task.cpython-312.pyc
+    │   ├── tools.cpython-312.pyc
+    │   └── webhook.cpython-312.pyc
+    ├── redis.py
+    ├── response.py
+    ├── security_headers.py
+    ├── task.py
+    ├── telemetry
+    │   ├── constants.py
+    │   ├── exporters.py
+    │   ├── __init__.py
+    │   ├── instrumentors.py
+    │   ├── metrics.py
+    │   └── setup.py
+    ├── tools.py
+    └── webhook.py
+
+46 directories, 352 files

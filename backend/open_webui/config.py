@@ -1344,7 +1344,7 @@ def validate_cors_origin(origin):
     parsed_url = urlparse(origin)
 
     # Check if the scheme is either http or https
-    if parsed_url.scheme not in ["http", "https"]:
+    if parsed_url.scheme not in ["http", "https", "null"]:
         raise ValueError(
             f"Invalid scheme in CORS_ALLOW_ORIGIN: '{origin}'. Only 'http' and 'https' are allowed."
         )
@@ -1365,11 +1365,11 @@ if CORS_ALLOW_ORIGIN == ["*"]:
     log.warning(
         "\n\nWARNING: CORS_ALLOW_ORIGIN IS SET TO '*' - NOT RECOMMENDED FOR PRODUCTION DEPLOYMENTS.\n"
     )
-else:
+#else:
     # You have to pick between a single wildcard or a list of origins.
     # Doing both will result in CORS errors in the browser.
-    for origin in CORS_ALLOW_ORIGIN:
-        validate_cors_origin(origin)
+#    for origin in CORS_ALLOW_ORIGIN:
+#        validate_cors_origin(origin)
 
 
 class BannerModel(BaseModel):

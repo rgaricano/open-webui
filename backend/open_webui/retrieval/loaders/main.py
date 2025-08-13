@@ -10,11 +10,12 @@ from langchain_community.document_loaders import (
     CSVLoader,
     Docx2txtLoader,
     OutlookMessageLoader,
-    PyPDFLoader,
+    PyMuPDFLoader,
     TextLoader,
     UnstructuredEPubLoader,
     UnstructuredExcelLoader,
     UnstructuredODTLoader,
+#    UnstructuredMarkdownLoader,
     UnstructuredPowerPointLoader,
     UnstructuredRSTLoader,
     UnstructuredXMLLoader,
@@ -226,10 +227,7 @@ class Loader:
 
     def _is_text_file(self, file_ext: str, file_content_type: str) -> bool:
         return file_ext in known_source_ext or (
-            file_content_type
-            and file_content_type.find("text/") >= 0
-            # Avoid text/html files being detected as text
-            and not file_content_type.find("html") >= 0
+            file_content_type and file_content_type.find("text/") >= 0
         )
 
     def _get_loader(self, filename: str, file_content_type: str, file_path: str):
@@ -359,7 +357,7 @@ class Loader:
             )
         else:
             if file_ext == "pdf":
-                loader = PyPDFLoader(
+                loader = PyMuPDFLoader(
                     file_path, extract_images=self.kwargs.get("PDF_EXTRACT_IMAGES")
                 )
             elif file_ext == "csv":

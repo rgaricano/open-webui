@@ -74,12 +74,13 @@
 		{@const iframeSrc = match && match[1]}
 		{#if iframeSrc}
 			<iframe
-				class="w-full my-2"
+				class="max-w-full my-2 flex flex-col w-full h-screen max-h-[100dvh] transition-width duration-200 ease-in-out"
 				src={iframeSrc}
 				title="Embedded content"
 				frameborder="0"
-				sandbox
-				onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
+				sandbox="allow-scripts allow-downloads{($settings?.iframeSandboxAllowForms ?? false)
+					? ' allow-forms'
+					: ''}{($settings?.iframeSandboxAllowSameOrigin ?? false) ? ' allow-same-origin' : ''}"
 			></iframe>
 		{:else}
 			{token.text}

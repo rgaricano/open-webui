@@ -1078,6 +1078,8 @@ async def process_chat_response(
                 )
 
             if tasks and messages:
+                log.debug(f"XXXXXXX-tasks0: {tasks}")
+
                 if (
                     TASKS.FOLLOW_UP_GENERATION in tasks
                     and tasks[TASKS.FOLLOW_UP_GENERATION]
@@ -1131,8 +1133,10 @@ async def process_chat_response(
                             )
                         except Exception as e:
                             pass
+                log.debug(f"XXXXXXX-task_title_gen0: {TASKS.TITLE_GENERATION}-{tasks[TASKS.TITLE_GENERATION]}")
 
                 if TASKS.TITLE_GENERATION in tasks:
+                    log.debug(f"XXXXXXX-task_title_gen1: {TASKS.TITLE_GENERATION}-{tasks[TASKS.TITLE_GENERATION]}")
                     user_message = get_last_user_message(messages)
                     if user_message and len(user_message) > 100:
                         user_message = user_message[:100] + "..."
@@ -1196,6 +1200,7 @@ async def process_chat_response(
                         )
 
                 if TASKS.TAGS_GENERATION in tasks and tasks[TASKS.TAGS_GENERATION]:
+                    log.debug(f"XXXXXXX-task_tags_gen: {TASKS.TAGS_GENERATION}-{tasks[TASKS.TAGS_GENERATION]}")
                     res = await generate_chat_tags(
                         request,
                         {

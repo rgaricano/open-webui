@@ -102,29 +102,6 @@ RUN if [ $UID -ne 0 ]; then \
     adduser --uid $UID --gid $GID --home $HOME --disabled-password --no-create-home app; \
     fi
 
-ENV OPENSSL_FIPS=1
-RUN mkdir -p /usr/local/src/ \
-  && cd /usr/local/src/ \
-  && curl -O https://www.openssl.org/source/openssl-fips-2.0.16.tar.gz \
-  && curl -O https://www.openssl.org/source/openssl-1.0.2t.tar.gz \
-  && tar -xvf openssl-fips-2.0.16.tar.gz \
-  && cd openssl-fips-2.0.16 \
-  && ./config \
-  && make install \
-  && cd ../ \
-  && rm -f openssl-fips-2.0.16.tar.gz \
-  && rm -rf ./openssl-fips-2.0.16 \
-  && tar -xvf openssl-1.0.2t.tar.gz \
-  && cd openssl-1.0.2t \
-  && ./config shared fips no-ssl2 no-ssl3 \
-  && make depend \
-  && make install \
-  && echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-1.0.2t.conf \
-  && ldconfig -v \
-  && ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl \
-  && openssl version
-
-
 RUN mkdir -p $HOME/.cache/chroma
 RUN echo -n 00000000-0000-0000-0000-000000000000 > $HOME/.cache/chroma/telemetry_user_id
 
@@ -174,7 +151,6 @@ RUN pip3 install --no-cache-dir uv && \
     python -c "import os; import tiktoken; tiktoken.get_encoding(os.environ['TIKTOKEN_ENCODING_NAME'])"; \
     fi; \
     chown -R $UID:$GID /app/backend/data/
-
 
 
 

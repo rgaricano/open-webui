@@ -962,7 +962,7 @@ class RerankCompressor(BaseDocumentCompressor):
             docs_with_scores = [
                 (d, s) for d, s in docs_with_scores if s >= self.r_score
             ]
-
+        log.info(f"XXXXXXX-r_score: {self.r_score}")
         result = sorted(docs_with_scores, key=operator.itemgetter(1), reverse=True)
         final_results = []
         for doc, doc_score in result[: self.top_n]:
