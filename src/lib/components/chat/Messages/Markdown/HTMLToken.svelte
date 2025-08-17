@@ -18,6 +18,27 @@
 	} else {
 		html = null;
 	}
+
+        //autofit iframe
+        let iframeEl;
+        $: if (iframeEl) {
+                iframeEl.onload = () => {
+                        try {
+                                iframeEl.style.height =
+                                        iframeEl.contentWindow.document.body.scrollHeight+40+'px';
+                                if (iframeEl.contentWindow.ResizeObserver) {
+                                        const ro = new iframeEl.contentWindow.ResizeObserver(() => {
+                                                iframeEl.style.height =
+                                                        iframeEl.contentWindow.document.body.scrollHeight+40+'px';
+                                        });
+                                        ro.observe(iframeEl.contentWindow.document.body);
+                                }
+                        } catch {
+                                iframeEl.style.minHeight = '18px';
+                        }
+                };
+        }
+
 </script>
 
 {#if token.type === 'html'}
@@ -70,17 +91,22 @@
 			</iframe>
 		{/if}
 	{:else if token.text && token.text.includes('<iframe')}
-		{@const match = token.text.match(/<iframe\s+[^>]*src="([^"]+)"[^>]*><\/iframe>/)}
-		{@const iframeSrc = match && match[1]}
-		{#if iframeSrc}
-			<iframe
-				class="w-full my-2"
-				src={iframeSrc}
-				title="Embedded content"
-				frameborder="0"
-				sandbox
-				onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
-			></iframe>
+                {@const match = token.text.match(/<iframe\s+[^>]*(src|srcdoc)="([^"]+)"[^>]*><\/iframe>/)}
+                {@const iframeAttr = match && match[1]}
+                {@const iframeValue = match && match[2]}
+                {#if iframeValue}
+                        <iframe
+                                class="max-w-full my-2 flex flex-col w-full h-screen max-h-[100dvh]"
+                                bind:this={iframeEl}
+                                {...{ [iframeAttr]: iframeValue }}
+                                title="Embedded content"
+                                frameborder="0"
+                                allowfullscreen
+                                sandbox="allow-scripts allow-downloads{($settings?.iframeSandboxAllowForms ?? false)
+                                        ? ' allow-forms'
+                                        : ''}{($settings?.iframeSandboxAllowSameOrigin ?? false) ? ' allow-same-origin' : ''}"
+                        ></iframe>
+
 		{:else}
 			{token.text}
 		{/if}
