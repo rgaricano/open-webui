@@ -74,8 +74,18 @@ async def redis_list_item_tasks(redis: Redis, item_id: str) -> List[str]:
     return list(await redis.smembers(f"{REDIS_ITEM_TASKS_KEY}:{item_id}"))
 
 
-async def redis_send_command(redis: Redis, command: dict):
-    await redis.publish(REDIS_PUBSUB_CHANNEL, json.dumps(command))
+async def redis_send_command(redis: Redis, command: dict):  
+    command_json = json.dumps(command)  
+      
+    # Check if we're dealing with a RedisCluster  
+    if hasattr(redis, 'get_node'):  
+        # For RedisCluster, publish to all master nodes  
+        for node in redis.get_master_nodes():  
+            node_client = redis.get_redis_connection(node)  
+            await node_client.publish(REDIS_PUBSUB_CHANNEL, command_json)  
+    else:  
+        # Standard Redis connection  
+        await redis.publish(REDIS_PUBSUB_CHANNEL, command_json)
 
 
 async def cleanup_task(redis, task_id: str, id=None):
