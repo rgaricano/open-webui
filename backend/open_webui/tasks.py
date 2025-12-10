@@ -82,7 +82,7 @@ async def redis_send_command(redis: Redis, command: dict):
         await redis.spublish(REDIS_PUBSUB_CHANNEL, command_json)  
     else:  
         # Standard Redis connection  
-        await redis.publish(REDIS_PUBSUB_CHANNEL, command_json
+        await redis.publish(REDIS_PUBSUB_CHANNEL, command_json)
 
 
 async def cleanup_task(redis, task_id: str, id=None):
