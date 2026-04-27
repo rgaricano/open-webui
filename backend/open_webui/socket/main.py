@@ -173,6 +173,7 @@ CHAT_YDOC_MANAGER = ChatYdocManager(
     redis_key_prefix=f'{REDIS_KEY_PREFIX}:ydoc:chat_yjs',
 )
 
+
 async def periodic_session_pool_cleanup():
     """Reap orphaned SESSION_POOL entries that missed heartbeats (e.g. crashed instance)."""
     if not session_aquire_func():
@@ -812,6 +813,7 @@ async def yjs_awareness_update(sid, data):
     except Exception as e:
         log.error(f'Error in yjs_awareness_update: {e}')
 
+
 @sio.on('chat:message:full_state')
 async def handle_chat_full_state_request(sid, data):
     """Send full Yjs document state for chat messages"""
@@ -828,19 +830,16 @@ async def handle_chat_full_state_request(sid, data):
         if full_state:
             await sio.emit(
                 'chat:completion',
-                {
-                    'message_id': message_id,
-                    'yjs_update': full_state.hex(),
-                    'is_full_state': True
-                },
-                room=sid
+                {'message_id': message_id, 'yjs_update': full_state.hex(), 'is_full_state': True},
+                room=sid,
             )
         else:
             log.warning(f'No document state found for message {message_id}')
 
     except Exception as e:
         log.error(f'Error handling full state request: {e}')
-        
+
+
 @sio.event
 async def disconnect(sid):
     if sid in SESSION_POOL:

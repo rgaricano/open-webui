@@ -1,5 +1,5 @@
 from __future__ import annotations
- 
+
 import json
 import uuid
 from open_webui.utils.redis import get_redis_connection
@@ -135,6 +135,7 @@ class YdocManager:
         self._users = {}
         self._redis = redis
         self._redis_key_prefix = redis_key_prefix
+
     async def append_to_updates(self, document_id: str, update: bytes):
         document_id = document_id.replace(':', '_')
         if self._redis:
@@ -263,6 +264,7 @@ class YdocManager:
             if document_id in self._users:
                 del self._users[document_id]
 
+
 class ChatYdocManager:
     """Manages Yjs documents for chat message streaming"""
 
@@ -311,7 +313,7 @@ class ChatYdocManager:
         if not ydoc:
             return None
         current_output = list(ydoc['output'])
-        # Apply update 
+        # Apply update
         ydoc['output'] = Y.Array(current_output)
         # Get and emit full state (no diff in pycrdt)
         state_update = ydoc.get_update()
@@ -336,23 +338,23 @@ class ChatYdocManager:
 
     async def _store_initial_state(self, message_id: str, ydoc: Y.Doc):
         """Store initial document state"""
-        redis_key = f"{self._redis_key_prefix}:{message_id}:state"
+        redis_key = f'{self._redis_key_prefix}:{message_id}:state'
         state = ydoc.get_update()
         await self._redis.set(redis_key, state, ex=3600)  # 1 hour TTL
 
     async def _store_update(self, message_id: str, delta: bytes):
         """Store incremental update"""
-        redis_key = f"{self._redis_key_prefix}:{message_id}:updates"
+        redis_key = f'{self._redis_key_prefix}:{message_id}:updates'
         await self._redis.lpush(redis_key, json.dumps(list(delta)))  # Convert to list for JSON
         await self._redis.expire(redis_key, 3600)
 
     async def _get_stored_updates(self, message_id: str) -> List[bytes]:
         """Retrieve all stored updates"""
-        redis_key = f"{self._redis_key_prefix}:{message_id}:updates"
+        redis_key = f'{self._redis_key_prefix}:{message_id}:updates'
         updates = await self._redis.lrange(redis_key, 0, -1)
         return [bytes(update) for update in updates]
 
     async def _cleanup_stored_updates(self, message_id: str):
         """Clean up stored updates"""
-        await self._redis.delete(f"{self._redis_key_prefix}:{message_id}:state")
-        await self._redis.delete(f"{self._redis_key_prefix}:{message_id}:updates")
+        await self._redis.delete(f'{self._redis_key_prefix}:{message_id}:state')
+        await self._redis.delete(f'{self._redis_key_prefix}:{message_id}:updates')

@@ -140,9 +140,9 @@ export class ChatMessageYjsHandler {
 	private doc: Y.Doc;
 	private socket: Socket;
 	private messageId: string;
-	private onContentUpdate?: (content: string) => void;
+	private onContentUpdate:Function;
 
-	constructor(messageId: string, socket: Socket, onContentUpdate?: (content: string) => void) {
+	constructor(messageId: string, socket: Socket, onContentUpdate: Function) {
 		this.messageId = messageId;
 		this.socket = socket;
 		this.onContentUpdate = onContentUpdate;
@@ -182,4 +182,4 @@ export class ChatMessageYjsHandler {
 	destroy() {
 		this.socket.off('chat:completion');
 	}
- }
+}

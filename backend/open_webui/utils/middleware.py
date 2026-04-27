@@ -3841,16 +3841,15 @@ async def streaming_chat_response_handler(response, ctx):
                     # Helper function to update both output array and Yjs document
                     async def update_and_emit():
                         """Update Yjs document and emit state"""
-                        state_update = await CHAT_YDOC_MANAGER.update_document(message_id) #, output)
+                        state_update = await CHAT_YDOC_MANAGER.update_document(message_id)  # , output)
 
                         if state_update:
-                            await event_emitter({
-                                'type': 'chat:completion',
-                                'data': {
-                                    'yjs_update': state_update.hex(),
-                                    'message_id': message_id
+                            await event_emitter(
+                                {
+                                    'type': 'chat:completion',
+                                    'data': {'yjs_update': state_update.hex(), 'message_id': message_id},
                                 }
-                            })
+                            )
 
                     async def flush_pending_delta_data(threshold: int = 0):
                         nonlocal delta_count
@@ -3890,7 +3889,7 @@ async def streaming_chat_response_handler(response, ctx):
                                 filter_type='stream',
                                 form_data={
                                     **data,
-                                    'full_output': output  # Use output array directly
+                                    'full_output': output,  # Use output array directly
                                 },
                                 extra_params={'__body__': form_data, **extra_params},
                             )

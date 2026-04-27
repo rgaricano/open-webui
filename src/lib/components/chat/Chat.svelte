@@ -14,6 +14,7 @@
 	import type { i18n as i18nType } from 'i18next';
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import equal from 'fast-deep-equal';
+	import { ChatMessageYjsHandler } from '$lib/utils/ChatMessageYjs';
 
 	import {
 		chatId,
@@ -113,6 +114,7 @@
 	export let chatIdProp = '';
 
 	let loading = true;
+	const yjsHandlers = new Map();
 
 	const eventTarget = new EventTarget();
 	let controlPane: Pane | undefined;
@@ -1648,25 +1650,34 @@
 	};
 
 	const chatCompletionEventHandler = async (data, message, chatId) => {
-		const { id, done, choices, content, output, sources, selected_model_id, error, usage, yjs_update } = data;
+		const {
+			id,
+			done,
+			choices,
+			content,
+			output,
+			sources,
+			selected_model_id,
+			error,
+			usage,
+			yjs_update
+		} = data;
 
-		// Handle Yjs updates for streaming  
-		if (yjs_update && message.id) {  
-			// Get or create Yjs handler for this message  
-			if (!message.yjsHandler) {  
-				message.yjsHandler = new ChatMessageYjsHandler(  
-					message.id,  
-					$socket,  
-					(content) => {  
-						message.content = content;  
-					}  
-				);  
-			}  
-			
-			// Apply Yjs update (handled internally by ChatMessageYjsHandler)  
-			// The handler will update message.content via the callback  
-			return; // Skip traditional processing for Yjs updates  
-		}  
+		// Handle Yjs updates for streaming
+		if (yjs_update && message.id) {
+			// Get or create Yjs handler for this message
+			if (!yjsHandlers.has(message.id)) {
+				yjsHandlers.set(message.id, new ChatMessageYjsHandler(message.id, $socket, (content) => {
+                	message.content = content;
+//                	console.log('Yjs content update:', content.length, 'characters')
+            	}));
+			}
+
+			// Apply Yjs update (handled internally by ChatMessageYjsHandler)
+			const handler = yjsHandlers.get(message.id);
+			// The handler will update message.content via the callback
+			return; // Skip traditional processing for Yjs updates
+		}
 
 		// Store raw OR-aligned output items from backend
 		if (output) {
@@ -1771,6 +1782,11 @@
 		history.messages[message.id] = message;
 
 		if (done) {
+			if (yjsHandlers.has(message.id)) {
+				const handler = yjsHandlers.get(message.id);
+				handler.destroy();
+				yjsHandlers.delete(message.id);
+			}
 			message.done = true;
 
 			if ($settings.responseAutoCopy) {
