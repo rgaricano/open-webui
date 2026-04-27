@@ -1667,10 +1667,13 @@
 		if (yjs_update && message.id) {
 			// Get or create Yjs handler for this message
 			if (!yjsHandlers.has(message.id)) {
-				yjsHandlers.set(message.id, new ChatMessageYjsHandler(message.id, $socket, (content) => {
-                	message.content = content;
-//                	console.log('Yjs content update:', content.length, 'characters')
-            	}));
+				yjsHandlers.set(
+					message.id,
+					new ChatMessageYjsHandler(message.id, $socket, (content) => {
+						message.content = content;
+						//                	console.log('Yjs content update:', content.length, 'characters')
+					})
+				);
 			}
 
 			// Apply Yjs update (handled internally by ChatMessageYjsHandler)
