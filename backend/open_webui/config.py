@@ -76,8 +76,8 @@ def run_migrations():
         log.exception(f'Error running migrations: {e}')
 
 
-if ENABLE_DB_MIGRATIONS:
-    run_migrations()
+#if ENABLE_DB_MIGRATIONS:
+#    run_migrations()
 
 
 async def import_legacy_config_json():

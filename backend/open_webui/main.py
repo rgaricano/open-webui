@@ -72,6 +72,7 @@ from open_webui.config import (
     async_reset_config,
     import_legacy_config_json,
     seed_registered_defaults,
+    run_migrations,
 )
 from open_webui.constants import ERROR_MESSAGES, TASKS
 from open_webui.env import (
@@ -121,6 +122,7 @@ from open_webui.env import (
     WEBUI_SECRET_KEY,
     WEBUI_SESSION_COOKIE_SAME_SITE,
     WEBUI_SESSION_COOKIE_SECURE,
+    ENABLE_DB_MIGRATIONS,
 )
 from open_webui.events import (
     EVENTS,
@@ -309,6 +311,10 @@ class CORSStaticFiles(StaticFiles):
         response = await super().get_response(path, scope)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
+
+if ENABLE_DB_MIGRATIONS:
+    run_migrations()
+
 
 
 if LOG_FORMAT != 'json':
